@@ -1,0 +1,76 @@
+#!/usr/bin/python3
+"""I want to write a tool to check SQL vulnerability in a website."""
+from bs4 import BeautifulSoup as bs
+import requests as rq
+
+# Creating a session request
+se = rq.Session()
+# Assigning user agent to session headers
+se.headers["User-Agent"] = "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+
+# Creating a function urlf to get urlform from a website
+def urlf(url):
+    soup = bs(se.get(url).content, "html.parser")
+    return soup.find_all("form")
+
+# Function to get form details
+def formd(form):
+    det = {}
+    action = form.attrs.get("action")
+    method = form.attrs.get("method")
+    inputs = []
+
+    for input_tag in form.find_all("input"):
+        input_type = input_tag.attrs.get("type", "text")
+        input_name = input_tag.attrs.get("name")
+        input_value = input_tag.attrs.get("value", "")
+        inputs.append({"type": input_type, "name": input_name, "value": input_value})
+
+    # Details for form
+    det["action"] = action
+    det["method"] = method
+    det["inputs"] = inputs
+    return det
+
+# Function to check if the response indicates a SQL injection vulnerability
+def vulnerable(response):
+    errors = {"quoted string not properly terminated", "unclosed quotation mark after the character string", "you have an error in SQL syntax"}
+    for error in errors:
+        if error in response.content.decode().lower():
+            return True
+    return False
+
+# Function to perform SQL injection testing
+def sqlj(url):
+    forms = urlf(url)
+    print(f"[+] CATCHED {len(forms)} forms on {url}")
+
+    for form in forms:
+        details = formd(form)
+
+        res = None  # Initialize res outside the loop
+
+        for i in "\"'":
+            data = {}
+            for input_tag in details["inputs"]:
+                if input_tag["type"] == "hidden" or input_tag["value"]:
+                    data[input_tag["name"]] = input_tag["value"] + i
+                elif input_tag["type"] != "submit":
+                    data[input_tag["name"]] = f"test{i}"
+
+            print(url)
+            formd(form)
+            if details["method"] == "post":
+                res = se.post(url, data=data)
+            elif details["method"] == "get":
+                res = se.get(url, params=data)
+
+        if res and vulnerable(res):
+            print(" SQL INJECTION ATTACK POSITIVE RUN!! IN LINK", url)
+        else:
+            print(" SQL INJECTION NEGATIVE IN LINK", url)
+
+if __name__ == "__main__":
+    target_url = input("ENTER ANY WEBSITE:\n") 
+    sqlj(target_url)
+

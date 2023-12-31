@@ -20,7 +20,7 @@ if [[ " ${check[@]} " =~ " ${tools} " ]]; then
 	2. save to a file 
 	choose from the above options: " 
 	read output 
-	#we="$tools $sites" 
+	we="$tools $sites" 
 	case $output in
 		1)
 			$we
@@ -39,5 +39,5 @@ if [[ " ${check[@]} " =~ " ${tools} " ]]; then
 
 else
 
-	printf "Abi na ur eye de pain u ni"
+	printf "input a valid tool"
 fi
